@@ -58,10 +58,8 @@ final class WPJobAlerts {
 	 */
 	public function includes()
 	{
-		include_once(MDJA_PLUGIN_PATH . 'class-logger.php');
+		include_once( MDJA_PLUGIN_PATH . 'includes/class-md-post-type-job-alerts-log.php' );
 		include_once( MDJA_PLUGIN_PATH . 'includes/class-md-process-job-alerts.php' );
-
-		
 	}
 
 	/**
@@ -115,7 +113,6 @@ final class WPJobAlerts {
 		}
 
 		if ( 'all' === $_GET['process-job-alerts'] ) {
-			
 			$this->handle_all();
 		}
 	}
@@ -124,13 +121,20 @@ final class WPJobAlerts {
 	 * Handle all
 	 */
 	protected function handle_all() {
+		global $wpdb;
+
+		
 		$users = $this->processor->get_subscribers();
+		$all_alerts = $this->processor->get_job_alerts();
+		$published_alerts = $this->processor->get_published_job_alerts();
+		$log_id = $this->processor->create_db_record(count($users), count($all_alerts), count($published_alerts));
 
 		foreach ($users as $user ) {
+			$user->potential_alerts = $published_alerts;
+			$user->log_id = $log_id;
 			$this->processor->push_to_queue( $user );
 		}
-
-		$this->processor->create_db_record();
+		
 		$this->processor->save()->dispatch();
 	}
 }
