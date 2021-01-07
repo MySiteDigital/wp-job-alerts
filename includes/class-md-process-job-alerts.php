@@ -105,7 +105,8 @@ class ProcessJobAlerts extends \WP_Background_Process {
 
 		$email_sent = false;
 		if( count( $matching_jobs ) ){
-			$email_sent =  jr_job_alerts_send_email($user_id, $matching_jobs);
+			$jobs_to_send = array_slice( array_reverse($matching_jobs), 0, $jr_options->jr_job_alerts_jobs_limit, true );
+			$email_sent =  jr_job_alerts_send_email($user_id, $jobs_to_send);
 		}
 
 		$message = '<hr>
@@ -122,6 +123,8 @@ class ProcessJobAlerts extends \WP_Background_Process {
 						<dd>' . ($users_job_cats ? print_r( $users_job_cats, true ) : 'All') . '</dd>
 						<dt><strong>Users Alerts</strong></dt>
 						<dd>' . print_r( $matching_jobs, true ) . '</dd>
+						<dt><strong>Jobs Included in Email</strong></dt>
+						<dd>' . print_r( $jobs_to_send, true ) . '</dd>
 						<dt><strong>Email Sent</strong></dt>
 						<dd>' . ($email_sent ? 'Yes' : 'No') . '</dd>
 					</dl>
@@ -185,7 +188,8 @@ class ProcessJobAlerts extends \WP_Background_Process {
 						<td><p class="description">' . $log->post_date . '</p>
 					</tr>
 				</tbody>
-			</table>';
+			</table>
+			<hr>';
 		
 		$log = array(
 			'ID'           => $log_id,
