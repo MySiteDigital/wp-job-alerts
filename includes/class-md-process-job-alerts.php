@@ -96,22 +96,25 @@ class ProcessJobAlerts extends \WP_Background_Process {
 
 			if ($alert_matches) {
 				$matching_jobs[] = $alert->post_id;
-				$wpdb->query(
-					$wpdb->prepare(
-						"UPDATE $wpdb->jr_alerts
-						SET last_activity = CURRENT_TIMESTAMP, last_user_id = %d
-						WHERE post_id = %d", 
-						$user_id,
-						$alert->post_id
-					)
-				);
+				//turn off until ready to go live
+				// $wpdb->query(
+				// 	$wpdb->prepare(
+				// 		"UPDATE $wpdb->jr_alerts
+				// 		SET last_activity = CURRENT_TIMESTAMP, last_user_id = %d
+				// 		WHERE post_id = %d", 
+				// 		$user_id,
+				// 		$alert->post_id
+				// 	)
+				// );
 			}
 		}
 
 		$email_sent = false;
 		if( count( $matching_jobs ) ){
 			$jobs_to_send = array_slice( array_reverse($matching_jobs), 0, $jr_options->jr_job_alerts_jobs_limit, true );
-			$email_sent =  jr_job_alerts_send_email( $user_id, $jobs_to_send );
+			//all alerts will be sent to the test seeker account until ready to go live
+			//$email_sent =  jr_job_alerts_send_email( $user_id, $jobs_to_send );
+			$email_sent =  jr_job_alerts_send_email( 6553, $jobs_to_send );
 			if( $email_sent ){
 				update_post_meta( $log_id, 'email_count', $current_count + 1 );
 			}
