@@ -67,9 +67,11 @@ final class WPJobAlerts {
 	 */
 	private function init_hooks()
 	{
-		\add_action('plugins_loaded', array($this, 'init'));
-		\add_action('admin_bar_menu', array($this, 'admin_bar'), 100);
-		\add_action('init', array($this, 'process_handler'));
+		\add_action( 'plugins_loaded', [ $this , 'init' ] );
+		\add_action( 'admin_bar_menu', [ $this, 'admin_bar' ] , 100 );
+		\add_action( 'init', [ $this, 'schedule_daily_processor' ] );
+		\add_action( 'init', [ $this, 'process_handler' ] );
+		\add_action( 'md_daily_job_alerts', [ $this, 'handle_all' ] );
 	}
 
 	/**
@@ -103,7 +105,14 @@ final class WPJobAlerts {
 	/**
 	 * Process handler
 	 */
+	public function schedule_daily_processor() {
+		if ( ! wp_next_scheduled( 'md_daily_job_alerts' ) ) {
+			\wp_schedule_event( strtotime('tomorrow GMT'), 'daily', 'md_daily_job_alerts' );
+		}
+	}
+
 	public function process_handler() {
+	
 		if ( ! isset( $_GET['process-job-alerts'] ) || ! isset( $_GET['_wpnonce'] ) ) {
 			return;
 		}
@@ -113,26 +122,27 @@ final class WPJobAlerts {
 		}
 
 		if ( 'all' === $_GET['process-job-alerts'] ) {
-			$this->handle_all();
+			$this->handle_all( false );
 		}
 	}
 
 	/**
 	 * Handle all
 	 */
-	protected function handle_all() {
+	public function handle_all( $auto = true ) {
 		global $wpdb;
 
 		
-		$users = $this->processor->get_subscribers();
+		$queue_items = $this->processor->get_subscribers();
 		$all_alerts = $this->processor->get_job_alerts();
 		$published_alerts = $this->processor->get_published_job_alerts();
-		$log_id = $this->processor->create_db_record(count($users), count($all_alerts), count($published_alerts));
+		$log_id = $this->processor->create_db_record( $auto, count($queue_items), count($all_alerts), count($published_alerts) );
 
-		foreach ($users as $user ) {
-			$user->potential_alerts = $published_alerts;
-			$user->log_id = $log_id;
-			$this->processor->push_to_queue( $user );
+		foreach ( $queue_items as $queue_item ) {
+			$queue_item->potential_alerts = $published_alerts;
+			$queue_item->log_id = $log_id;
+			$queue_item->last_user_id = end( $queue_items )->user_id;
+			$this->processor->push_to_queue( $queue_item );
 		}
 		
 		$this->processor->save()->dispatch();

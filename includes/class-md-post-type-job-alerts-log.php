@@ -121,6 +121,8 @@ class JobAlertsLog {
 
     public function meta_box_output(){
         global $post;
+        $summary = get_post_meta( $post->ID, 'log_summary', true );
+        echo $summary;
         echo $post->post_content;
     }
 
