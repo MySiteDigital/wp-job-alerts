@@ -125,7 +125,7 @@ class ProcessJobAlerts extends \WP_Background_Process {
 						<dt><strong>User ID</strong></dt>
 						<dd><a href="' . get_edit_user_link( $user_id ) . '" target="_blank">'. $user_id  . '</a></dd>
 						<dt><strong>User Email</strong></dt>
-						<dd>'. $queue_item->user_id . '</dd>
+						<dd>'. $queue_item->user_email . '</dd>
 						<dt><strong>Users Keywords</strong></dt>
 						<dd>' . ($users_keywords ? print_r( $users_keywords, true ) : 'None') . '</dd>
 						<dt><strong>Users Locations</strong></dt>
