@@ -111,7 +111,7 @@ class JobAlertsLog {
     public function add_meta_boxes() {
         add_meta_box(
             'job-alerts-log-ouput',
-            'Order Log',
+            'Job Alerts Process',
             [ $this, 'meta_box_output' ],
             'job-alerts-log',
             'normal',
@@ -122,7 +122,9 @@ class JobAlertsLog {
     public function meta_box_output(){
         global $post;
         $summary = get_post_meta( $post->ID, 'log_summary', true );
+        echo '<hr><h1>Summary</h1><hr>';
         echo $summary;
+        echo '<hr><h1>Full Details</h1><hr>';
         echo $post->post_content;
     }
 

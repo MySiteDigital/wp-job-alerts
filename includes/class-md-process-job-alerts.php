@@ -123,7 +123,9 @@ class ProcessJobAlerts extends \WP_Background_Process {
 		$message = '<hr>
 					<dl>
 						<dt><strong>User ID</strong></dt>
-						<dd>'. $user_id . '</dd>
+						<dd><a href="' . get_edit_user_link( $user_id ) . '" target="_blank">'. $user_id  . '</a></dd>
+						<dt><strong>User Email</strong></dt>
+						<dd>'. $queue_item->user_id . '</dd>
 						<dt><strong>Users Keywords</strong></dt>
 						<dd>' . ($users_keywords ? print_r( $users_keywords, true ) : 'None') . '</dd>
 						<dt><strong>Users Locations</strong></dt>
@@ -183,7 +185,7 @@ class ProcessJobAlerts extends \WP_Background_Process {
 		// delete all job alerts
 	}
 
-	public function create_db_record( $auto, $user_count, $total_alert_count, $published_alert_count ){
+	public function create_db_record( $auto, $user_count, $total_alert_count, $published_alerts ){
 		$titlePrefix = $auto ? 'Automatic' : 'Manual';
 		$log_id = wp_insert_post(
 			[
@@ -194,6 +196,24 @@ class ProcessJobAlerts extends \WP_Background_Process {
 		);
 
 		$log = get_post( $log_id );
+
+		$published_alerts_data = '';
+		if( count( $published_alerts ) ){
+			foreach ($published_alerts as $published_alert) {
+				$alert_data = '
+					<dl>
+						<dt>Job ID</dt>
+						<dd>' . $published_alert->post_id . '</dd>
+						<dt>Job Title</dt>
+						<dd>' . $published_alert->post_title . '</dd>
+						<dt>Alert Type</dt>
+						<dd>' . $published_alert->alert_type . '</dd>
+					</dl><hr>
+				';
+				$published_alerts_data .= $alert_data;
+			}
+		}
+		
 
 		$summary =
 			'<table class="form-table">
@@ -208,7 +228,11 @@ class ProcessJobAlerts extends \WP_Background_Process {
 					</tr>
 					<tr>
 						<th><label>Alerts in DB for Published Jobs</label></th>
-						<td><p class="description">' . $published_alert_count . '</p>
+						<td><p class="description">' . count( $published_alerts ) . '</p>
+					</tr>
+					<tr>
+						<th><label>Published Alerts Data</label></th>
+						<td><p class="description">' . $published_alerts_data . '</p>
 					</tr>
 					<tr>
 						<th><label>Processing Began at:</label></th>
@@ -228,8 +252,10 @@ class ProcessJobAlerts extends \WP_Background_Process {
 	public function get_subscribers()
 	{
 		global $wpdb;
-		$sql = "SELECT user_id 
+		$sql = "SELECT user_id, user_email 
 				FROM $wpdb->usermeta
+				INNER JOIN $wpdb->users
+				ON $wpdb->usermeta.user_id = $wpdb->users.ID
 				WHERE meta_key = 'jr_alert_status'
 				AND meta_value = 'active' 
 				ORDER BY user_id ASC";
