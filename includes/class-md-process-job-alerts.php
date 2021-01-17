@@ -22,7 +22,7 @@ class ProcessJobAlerts extends \WP_Background_Process {
 	 * @return mixed
 	 */
 	protected function task( $queue_item ) {
-		global $wpdb, $jr_options;
+		global $jr_options;
 		$user_id = $queue_item->user_id;
 		$last_user_id = $queue_item->last_user_id;
 		$log_id = $queue_item->log_id;
@@ -96,25 +96,13 @@ class ProcessJobAlerts extends \WP_Background_Process {
 
 			if ($alert_matches) {
 				$matching_jobs[] = $alert->post_id;
-				//turn off until ready to go live
-				// $wpdb->query(
-				// 	$wpdb->prepare(
-				// 		"UPDATE $wpdb->jr_alerts
-				// 		SET last_activity = CURRENT_TIMESTAMP, last_user_id = %d
-				// 		WHERE post_id = %d", 
-				// 		$user_id,
-				// 		$alert->post_id
-				// 	)
-				// );
 			}
 		}
 
 		$email_sent = false;
 		if( count( $matching_jobs ) ){
 			$jobs_to_send = array_slice( array_reverse($matching_jobs), 0, $jr_options->jr_job_alerts_jobs_limit, true );
-			//all alerts will be sent to the test seeker account until ready to go live
-			//$email_sent =  jr_job_alerts_send_email( $user_id, $jobs_to_send );
-			$email_sent =  jr_job_alerts_send_email( 6553, $jobs_to_send );
+			$email_sent =  jr_job_alerts_send_email( $user_id, $jobs_to_send );
 			if( $email_sent ){
 				update_post_meta( $log_id, 'email_count', $current_count + 1 );
 			}
@@ -123,7 +111,7 @@ class ProcessJobAlerts extends \WP_Background_Process {
 		$message = '<hr>
 					<dl>
 						<dt><strong>User ID</strong></dt>
-						<dd><a href="' . get_edit_user_link( $user_id ) . '" target="_blank">'. $user_id  . '</a></dd>
+						<dd><a href="/wp-admin/user-edit.php?user_id=' . $user_id . '" target="_blank">'. $user_id  . '</a></dd>
 						<dt><strong>User Email</strong></dt>
 						<dd>'. $queue_item->user_email . '</dd>
 						<dt><strong>Users Keywords</strong></dt>
@@ -150,10 +138,11 @@ class ProcessJobAlerts extends \WP_Background_Process {
 			'post_content' => $log->post_content . $message
 		];
 
-		wp_update_post($log);
+		\wp_update_post($log);
 
 		if( $user_id === $last_user_id ){
-			$log = get_post( $log_id );
+			$this->delete_completed_job_alerts($alerts);
+			$log = \get_post( $log_id );
 			$summary = \get_post_meta( $log_id, 'log_summary', true) .
 			'<table class="form-table">
 				<tbody>
@@ -181,8 +170,6 @@ class ProcessJobAlerts extends \WP_Background_Process {
 	 */
 	protected function complete() {
 		parent::complete();
-
-		// delete all job alerts
 	}
 
 	public function create_db_record( $auto, $user_count, $total_alert_count, $published_alerts ){
@@ -244,6 +231,21 @@ class ProcessJobAlerts extends \WP_Background_Process {
 
 		\update_post_meta( $log_id, 'log_summary', $summary );
 		return $log_id;
+	}
+
+	public function delete_completed_job_alerts($published_alerts)
+	{
+		global $wpdb;
+		foreach ($published_alerts as $published_alert) {
+			$wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM 
+					$wpdb->jr_alerts
+					WHERE post_id = %d",
+					$published_alert->post_id
+				)
+			);
+		}
 	}
 
 	/**
