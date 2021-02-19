@@ -139,7 +139,6 @@ final class WPJobAlerts {
 		$log_id = $this->processor->create_db_record( $auto, count($queue_items), count($all_alerts), $published_alerts );
 
 		foreach ( $queue_items as $queue_item ) {
-			$queue_item->potential_alerts = $published_alerts;
 			$queue_item->log_id = $log_id;
 			$queue_item->last_user_id = end( $queue_items )->user_id;
 			$this->processor->push_to_queue( $queue_item );

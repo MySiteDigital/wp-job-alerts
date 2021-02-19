@@ -26,7 +26,7 @@ class ProcessJobAlerts extends \WP_Background_Process {
 		$user_id = $queue_item->user_id;
 		$last_user_id = $queue_item->last_user_id;
 		$log_id = $queue_item->log_id;
-		$alerts = $queue_item->potential_alerts;
+		$alerts = $this->get_published_job_alerts();
 		$current_count = \get_post_meta($log_id, 'email_count', true);
 		$current_count = $current_count ? $current_count : 0;
 
@@ -127,7 +127,7 @@ class ProcessJobAlerts extends \WP_Background_Process {
 						<dt><strong>Jobs Included in Email</strong></dt>
 						<dd>' . print_r( $jobs_to_send, true ) . '</dd>
 						<dt><strong>Email Sent</strong></dt>
-						<dd>' . ($email_sent ? 'Yes' : 'No') . '</dd>
+						<dd>' . ($email_sent ? 'Yes, at: ' . \current_time( 'mysql' ) : 'No') . '</dd>
 					</dl>
 					<hr>';
 
